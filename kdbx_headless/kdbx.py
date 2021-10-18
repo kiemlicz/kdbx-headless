@@ -5,15 +5,15 @@ import secretstorage
 from jeepney.io.blocking import DBusConnection
 
 from kdbx_headless import app
-from flask import g
+from flask import session
 log = logging.getLogger(__name__)
 
 
-def start():
-    # kdbx = KDBX(secretstorage.dbus_init(), app.config.get("DB_NAME"))
-    with closing(secretstorage.dbus_init()) as conn, app.app_context() as a:
-        kdbx = KDBX(conn, app.config.get("DB_NAME"))
-        a.g["KDBX"] = kdbx
+# def start():
+#     # kdbx = KDBX(secretstorage.dbus_init(), app.config.get("DB_NAME"))
+#     with closing(secretstorage.dbus_init()) as conn:
+#         kdbx = KDBX(conn, app.config.get("DB_NAME"))
+#         session['kdbx'] = kdbx
 
 
 class KDBX:

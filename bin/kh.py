@@ -5,7 +5,6 @@ import logging
 import os
 
 from kdbx_headless import app
-from kdbx_headless.kdbx import start
 
 parser = argparse.ArgumentParser(description='Run KDBX simple REST API server')
 parser.add_argument('--log', help="log level (TRACE, DEBUG, INFO, WARN, ERROR)", required=False, default="INFO")
@@ -25,8 +24,6 @@ if not os.path.isabs(config):
     config = os.path.abspath(config)
 
 app.config.from_json(config)
-
-start()  # change name
 
 if args.ssl:
     context = (os.path.join(ssl, "kdbx-headless.crt"), os.path.join(ssl, "kdbx-headless.key"))
