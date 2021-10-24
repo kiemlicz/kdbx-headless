@@ -1,8 +1,11 @@
+from __future__ import annotations
 import logging
 from contextlib import closing
+from typing import Generator, Iterator
 
 import secretstorage
 from jeepney.io.blocking import DBusConnection
+from secretstorage import Item
 
 from kdbx_headless import app
 from flask import session
@@ -15,8 +18,12 @@ log = logging.getLogger(__name__)
 #         kdbx = KDBX(conn, app.config.get("DB_NAME"))
 #         session['kdbx'] = kdbx
 
+class KDBXService:
+    def get(self, **kwargs) -> Iterator[Item]:
+        pass
 
-class KDBX:
+
+class KDBXProxy(KDBXService):
     def __init__(self, connection: DBusConnection, db_name: str):
         try:
             self.secret_service = next(filter(
@@ -28,5 +35,14 @@ class KDBX:
             log.exception(msg)
             raise RuntimeError(msg) from e
 
-    def get(self, key: str, value: str):  ## types
-        return self.secret_service.search_items({key: value})
+    def get(self, **kwargs) -> Iterator[Item]:
+        return self.secret_service.search_items({**kwargs})
+
+
+class KDBX(KDBXService):
+    def __init__(self, db_file: str, db_passwod: str, db_keyfile: str):
+        from pykeepass import PyKeePass
+        self.kdbx = PyKeePass(db_file, db_passwod, db_keyfile)
+
+    def get(self, **kwargs) -> Iterator[Item]:
+        return self.kdbx.find_entries(**kwargs)
