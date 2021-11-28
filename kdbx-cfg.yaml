@@ -1,0 +1,15 @@
+# provide KDBX file, key file and password
+kdbx: {}
+  #file: "..."
+  #keyfile: "..."
+  #password: "..."
+
+log:
+  level: INFO
+  pattern: "[%(asctime)s] [%(levelname)-8s] %(message)s"
+  timestamp: '%Y-%m-%d %H:%M:%S'
+
+# method of interaction with KDBX file:
+# 1. KDBX - opens KDBX DB in kdbx-headless process
+# 2. KDBXProxy - uses different process KDBX via libsecret's DBUS connection
+kdbx_class: "KDBX"
