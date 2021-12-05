@@ -1,12 +1,13 @@
-# provide KDBX file, key file and password
+# provide KDBX file, key file and password if using kdbx_class: KDBX
+# provide db_name if using kdbx_class: KDBXProxy
 kdbx: {}
-  #file: "..."
+  #filename: "..."
   #keyfile: "..."
   #password: "..."
 
 log:
   level: INFO
-  pattern: "[%(asctime)s] [%(levelname)-8s] %(message)s"
+  pattern: "[%(asctime)s] [%(levelname)-8s] [%(threadName)s] %(message)s"
   timestamp: '%Y-%m-%d %H:%M:%S'
 
 # method of interaction with KDBX file:

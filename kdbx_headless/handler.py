@@ -27,12 +27,6 @@ def secret(kdbx: KDBXService = Provide[Container.kdbx]):
     return j
 
 
-@inject
-def after(response, kdbx: KDBXService = Provide[Container.kdbx]):
-    kdbx.close()
-    return response
-
-
 def _multi_dict_to_dict(md) -> Dict[str, Any]:
     d = {}
     for k, v in md.items(multi=True):

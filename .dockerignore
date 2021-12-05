@@ -1,0 +1,12 @@
+venv/
+.venv/
+.local/
+.idea
+*.egg-info
+.gitignore
+.dockerignore
+Dockerfile
+.git
+__pycache__
+docker-compose.override.yml
+docker-compose.yml

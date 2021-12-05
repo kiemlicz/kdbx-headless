@@ -1,14 +1,13 @@
 FROM python:3.10.0-bullseye
 
-COPY requirements.txt /tmp/requirements.txt
+COPY . /opt/kdbx-headless/
 
-RUN pip3 install -r /tmp/requirements.txt
-
-COPY kdbx_headless __main__.py /opt/
+RUN pip3 install -r /opt/kdbx-headless/requirements.txt &&\
+    pip3 install -e /opt/kdbx-headless
 
 VOLUME /etc/kdbx-headless/
-#fixme access dbus from host
+VOLUME /etc/kdbx/
 
-WORKDIR /opt
-ENTRYPOINT ["python3", "kdbx_headless"]
-CMD []
+WORKDIR /opt/kdbx-headless
+ENTRYPOINT ["python3", "/opt/kdbx-headless/bin/kh.py"]
+CMD [ "--ssl", "/etc/kdbx-headless/ssl", "--bind", "0.0.0.0" ]
