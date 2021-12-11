@@ -7,7 +7,7 @@ RUN pip3 install -r /opt/kdbx-headless/requirements.txt &&\
 
 VOLUME /etc/kdbx-headless/
 VOLUME /etc/kdbx/
-
+# TODO DBUS access
 WORKDIR /opt/kdbx-headless
 ENTRYPOINT ["python3", "/opt/kdbx-headless/bin/kh.py"]
 CMD [ "--ssl", "/etc/kdbx-headless/ssl", "--bind", "0.0.0.0" ]
