@@ -4,9 +4,10 @@ import logging
 import os
 import threading
 import time
-from typing import Iterator, Dict
+from typing import Iterator, Dict, Union, List
 
 import secretstorage
+from pykeepass.entry import Entry
 
 log = logging.getLogger(__name__)
 
@@ -49,17 +50,19 @@ class KDBXProxy(KDBXService):
         self.db_name = kdbx['db_name']
         self._dbus_lock = threading.RLock()
 
-    def get(self, **kwargs) -> Iterator[str]:
+    def get(self, **kwargs) -> Iterator[Dict[str, str]]:
         with self._dbus_lock:
             connection = self._open()
             self._reschedule()
             try:
                 # we could fetch it all and close right here
+                # todo how to handle KDBX attachments?
                 secret_service = next(filter(
                     lambda c: c.collection_path == f"/org/freedesktop/secrets/collection/{self.db_name}",
                     secretstorage.get_all_collections(connection)
                 ))
-                return map(lambda i: i.get_secret().decode("utf-8"), secret_service.search_items({**kwargs}))
+                return map(lambda i: {"password": i.get_secret().decode("utf-8")},
+                           secret_service.search_items({**kwargs}))
             except StopIteration as e:
                 self._close()
                 msg = f"Cannot find DB: {self.db_name}"
@@ -91,23 +94,46 @@ class KDBX(KDBXService):
         log.error(f"Opening DB: {self.kdbx_config['filename']}")
         self._open()
 
-    def get(self, **kwargs) -> Iterator[str]:
+    def get(self, **kwargs) -> Iterator[Dict[str, str]]:
         '''
 
         :param kwargs:
         :return: decoded password entry
         '''
+
+        def with_attachments(it: Iterator[Entry]) -> Iterator[Dict[str, str]]:
+            def parse_entry(e: Entry) -> Union[Dict[str, str]]:
+                r = {
+                }
+                if e.password:
+                    r['password'] = e.password
+                if e.attachments:
+                    r['attachments'] = [
+                        {'filename': attachment.filename, 'contents': attachment.data.decode("utf-8")} for attachment in
+                        e.attachments
+                    ]
+                return r
+
+            return map(lambda e: parse_entry(e), it)
+
+        def adjust_path(key: str, value: str) -> List[str]:
+            if key == "path":
+                return [value]
+            else:
+                return value
+
         with self._kdbx_lock:
             self._open()
             self._reschedule()
-            r = self.kdbx.find_entries(**kwargs)
+            k = {k: adjust_path(k, v) for k, v in kwargs.items()}
+            r = self.kdbx.find_entries(**k)
             if r is None:
+                log.info("No results")
                 return iter(())
             elif isinstance(r, list):
-                return map(lambda e: e.password, iter(r))
+                return with_attachments(iter(r))
             else:
-                # attachment?
-                return map(lambda e: e.password, iter([r]))
+                return with_attachments(iter([r]))
 
     def _open(self):
         with self._kdbx_lock:
