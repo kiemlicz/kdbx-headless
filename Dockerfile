@@ -1,9 +1,12 @@
 FROM python:3.10.0-bullseye
 
+COPY requirements.txt /opt/kdbx-headless/requirements.txt
+
+RUN pip3 install -r /opt/kdbx-headless/requirements.txt
+
 COPY . /opt/kdbx-headless/
 
-RUN pip3 install -r /opt/kdbx-headless/requirements.txt &&\
-    pip3 install -e /opt/kdbx-headless
+RUN pip3 install -e /opt/kdbx-headless
 
 VOLUME /etc/kdbx-headless/
 VOLUME /etc/kdbx/
