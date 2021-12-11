@@ -12,7 +12,30 @@ log = logging.getLogger(__name__)
 
 
 class KDBXService:
+    Threshold = 15.0  # seconds
+
+    def __init__(self):
+        self._cleanup_task = threading.Timer(KDBXService.Threshold, self._close)
+        self._last_access = time.time()
+
     def get(self, **kwargs) -> Iterator[str]:
+        pass
+
+    def _reschedule(self):
+        try:
+            self._cleanup_task.cancel()
+            self._cleanup_task = threading.Timer(KDBXService.Threshold, self._close)
+            self._cleanup_task.start()
+            log.debug("Rescheduled connection cleanup")
+        except Exception as e:
+            log.exception("Cannot reschedule cleanup")
+            self._cleanup_task = threading.Timer(KDBXService.Threshold, self._close)
+            self._cleanup_task.start()
+
+    def _open(self):
+        pass
+
+    def _close(self):
         pass
 
 
@@ -20,12 +43,10 @@ class KDBXProxy(KDBXService):
     """
     Use when the KDBX should be opened not by kdbx-headless process
     """
-    Threshold = 15.0  # seconds
 
     def __init__(self, kdbx: Dict[str, str]):
+        super().__init__()
         self.db_name = kdbx['db_name']
-        self._cleanup_task = threading.Timer(KDBXProxy.Threshold, self._close)
-        self._last_access = time.time()
         self._dbus_lock = threading.RLock()
 
     def get(self, **kwargs) -> Iterator[str]:
@@ -55,30 +76,20 @@ class KDBXProxy(KDBXService):
     def _close(self):
         log.info("Closing DBUS connection")
         with self._dbus_lock:
-            if (time.time() - self._last_access) >= KDBXProxy.Threshold:
+            if (time.time() - self._last_access) >= KDBXService.Threshold:
                 self.connection.close()
                 log.info("Closed DBUS connection")
-
-    def _reschedule(self):
-        try:
-            self._cleanup_task.cancel()
-            self._cleanup_task = threading.Timer(KDBXProxy.Threshold, self._close)
-            self._cleanup_task.start()
-            log.debug("Rescheduled connection cleanup")
-        except Exception as e:
-            log.exception("Cannot reschedule cleanup")
-            self._cleanup_task = threading.Timer(KDBXProxy.Threshold, self._close)
-            self._cleanup_task.start()
 
 
 class KDBX(KDBXService):
     def __init__(self, kdbx: Dict[str, str]) -> KDBX:
-        # todo implement same closing thread to close the DB after ttl
+        super().__init__()
         c = kdbx.copy()
         c.update({k: os.path.expanduser(v) for k, v in c.items() if k == "filename" or k == "keyfile"})
-        log.error(f"Opening DB: {c['filename']}")
-        from pykeepass import PyKeePass
-        self.kdbx = PyKeePass(**c)
+        self.kdbx_config = c
+        self._kdbx_lock = threading.RLock()
+        log.error(f"Opening DB: {self.kdbx_config['filename']}")
+        self._open()
 
     def get(self, **kwargs) -> Iterator[str]:
         '''
@@ -86,11 +97,27 @@ class KDBX(KDBXService):
         :param kwargs:
         :return: decoded password entry
         '''
-        r = self.kdbx.find_entries(**kwargs)
-        if r is None:
-            return iter(())
-        elif isinstance(r, list):
-            return map(lambda e: e.password, iter(r))
-        else:
-            # attachment?
-            return map(lambda e: e.password, iter([r]))
+        with self._kdbx_lock:
+            self._open()
+            self._reschedule()
+            r = self.kdbx.find_entries(**kwargs)
+            if r is None:
+                return iter(())
+            elif isinstance(r, list):
+                return map(lambda e: e.password, iter(r))
+            else:
+                # attachment?
+                return map(lambda e: e.password, iter([r]))
+
+    def _open(self):
+        with self._kdbx_lock:
+            from pykeepass import PyKeePass
+            self.kdbx = PyKeePass(**self.kdbx_config)
+            self._last_access = time.time()
+
+    def _close(self):
+        log.info("Closing KDBX DB")
+        with self._kdbx_lock:
+            if (time.time() - self._last_access) >= KDBXService.Threshold:
+                self.kdbx = None  # how to properly close PyKeePass?
+                log.info("Closed KDBX DB")
