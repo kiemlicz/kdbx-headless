@@ -2,16 +2,24 @@ version: "3.9"
 services:
   kdbx-headless:
     build: .
+    command:
+      - "--ssl"
+      - "/etc/kdbx-headless/ssl"
+      - "--bind"
+      - "0.0.0.0"
     environment:
       DBUS_SESSION_BUS_ADDRESS: ${DBUS_SESSION_BUS_ADDRESS}
+      UID: ${UID}  # UID/GID are shell variables must be exported first
+      GID: ${GID}
     restart: unless-stopped
     network_mode: host
+    user: "$UID:$GID" # override with $(id -u):$(id -g)
     ports:
       - "5000:5000"
     volumes:
       - type: bind
-        source: /run/user/1000/bus
-        target: /run/user/1000/bus
+        source: /run/user/$UID/bus
+        target: /run/user/$UID/bus
         read_only: true
       - type: bind
         source: /var/run/dbus/system_bus_socket

@@ -45,7 +45,7 @@ class KDBXProxy(KDBXService):
     Use when the KDBX should be opened not by kdbx-headless process
     """
 
-    def __init__(self, kdbx: Dict[str, str]):
+    def __init__(self, kdbx: Dict[str, str]) -> KDBXProxy:
         super().__init__()
         self.db_name = kdbx['db_name']
         self._dbus_lock = threading.RLock()
@@ -116,8 +116,8 @@ class KDBX(KDBXService):
 
             return map(lambda e: parse_entry(e), it)
 
-        def adjust_path(key: str, value: str) -> List[str]:
-            if key == "path":
+        def adjust_path(key: str, value: str) -> Union[List[str], str]:
+            if key == "path" and not isinstance(value, list):
                 return [value]
             else:
                 return value
@@ -126,6 +126,7 @@ class KDBX(KDBXService):
             self._open()
             self._reschedule()
             k = {k: adjust_path(k, v) for k, v in kwargs.items()}
+            log.debug(f"KDBX query: {k}")
             r = self.kdbx.find_entries(**k)
             if r is None:
                 log.info("No results")
