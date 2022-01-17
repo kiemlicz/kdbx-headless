@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/bin/kh.py" />
-    <option name="PARAMETERS" value="--ssl .local/ssl --bind 0.0.0.0" />
+    <option name="PARAMETERS" value="--ssl .local/ssl --bind 0.0.0.0 --verify CERT_OPTIONAL" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

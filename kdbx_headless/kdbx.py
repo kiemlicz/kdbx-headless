@@ -56,7 +56,7 @@ class KDBXProxy(KDBXService):
             self._reschedule()
             try:
                 # we could fetch it all and close right here
-                # todo how to handle KDBX attachments?
+                # todo how to handle KDBX attachments? - might be impossible and this is a problem since there is a limit for password length in keepassxc
                 secret_service = next(filter(
                     lambda c: c.collection_path == f"/org/freedesktop/secrets/collection/{self.db_name}",
                     secretstorage.get_all_collections(connection)
@@ -91,7 +91,7 @@ class KDBX(KDBXService):
         c.update({k: os.path.expanduser(v) for k, v in c.items() if k == "filename" or k == "keyfile"})
         self.kdbx_config = c
         self._kdbx_lock = threading.RLock()
-        log.error(f"Opening DB: {self.kdbx_config['filename']}")
+        log.info(f"Opening DB: {self.kdbx_config['filename']}")
         self._open()
 
     def get(self, **kwargs) -> Iterator[Dict[str, str]]:
