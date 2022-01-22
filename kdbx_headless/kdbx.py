@@ -103,14 +103,15 @@ class KDBX(KDBXService):
 
         def with_attachments(it: Iterator[Entry]) -> Iterator[Dict[str, str]]:
             def parse_entry(e: Entry) -> Union[Dict[str, str]]:
-                r = {
-                }
+                r = {}
                 if e.password:
                     r['password'] = e.password
                 if e.attachments:
                     r['attachments'] = [
-                        {'filename': attachment.filename, 'contents': attachment.data.decode("utf-8")} for attachment in
-                        e.attachments
+                        {
+                            'filename': attachment.filename,
+                            'contents': attachment.data.decode("utf-8")
+                        } for attachment in e.attachments
                     ]
                 return r
 
