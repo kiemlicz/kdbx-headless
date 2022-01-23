@@ -4,7 +4,7 @@ from itertools import islice
 from typing import Dict, Any
 
 from dependency_injector.wiring import inject, Provide
-from flask import request
+from flask import request, Response
 
 from .containers import Container
 from .kdbx import KDBXService
@@ -24,7 +24,7 @@ def secret(kdbx: KDBXService = Provide[Container.kdbx]):
     j = json.dumps({
         "secrets": list(islice(kdbx.get(**d), max_items))
     })
-    return j
+    return Response(j, mimetype='application/json')
 
 
 def _multi_dict_to_dict(md) -> Dict[str, Any]:
