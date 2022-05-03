@@ -45,9 +45,9 @@ class KDBXProxy(KDBXService):
     Use when the KDBX should be opened not by kdbx-headless process
     """
 
-    def __init__(self, kdbx: Dict[str, str]) -> KDBXProxy:
+    def __init__(self, db_name: str) -> KDBXProxy:
         super().__init__()
-        self.db_name = kdbx['db_name']
+        self.db_name = db_name
         self._dbus_lock = threading.RLock()
 
     def get(self, **kwargs) -> Iterator[Dict[str, str]]:
@@ -57,12 +57,16 @@ class KDBXProxy(KDBXService):
             try:
                 # we could fetch it all and close right here
                 # todo how to handle KDBX attachments? - might be impossible and this is a problem since there is a limit for password length in keepassxc
-                secret_service = next(filter(
-                    lambda c: c.collection_path == f"/org/freedesktop/secrets/collection/{self.db_name}",
-                    secretstorage.get_all_collections(connection)
-                ))
-                return map(lambda i: {"password": i.get_secret().decode("utf-8")},
-                           secret_service.search_items({**kwargs}))
+                secret_service = next(
+                    filter(
+                        lambda c: c.collection_path == f"/org/freedesktop/secrets/collection/{self.db_name}",
+                        secretstorage.get_all_collections(connection)
+                    )
+                )
+                return map(
+                    lambda i: {"password": i.get_secret().decode("utf-8")},
+                    secret_service.search_items({**kwargs})
+                )
             except StopIteration as e:
                 self._close()
                 msg = f"Cannot find DB: {self.db_name}"
@@ -85,14 +89,15 @@ class KDBXProxy(KDBXService):
 
 
 class KDBX(KDBXService):
-    def __init__(self, kdbx: Dict[str, str]) -> KDBX:
+    def __init__(self, filename: str, password: str = None, keyfile: str = None) -> KDBX:
         super().__init__()
-        c = kdbx.copy()
-        c.update({k: os.path.expanduser(v) for k, v in c.items() if k == "filename" or k == "keyfile"})
-        self.kdbx_config = c
+        self.filename = os.path.expanduser(filename)
+        if keyfile is not None:
+            self.keyfile = os.path.expanduser(keyfile)
+        else:
+            self.keyfile = None
+        self.password = password
         self._kdbx_lock = threading.RLock()
-        log.info(f"Opening DB: {self.kdbx_config['filename']}")
-        self._open()
 
     def get(self, **kwargs) -> Iterator[Dict[str, str]]:
         '''
@@ -140,7 +145,7 @@ class KDBX(KDBXService):
     def _open(self):
         with self._kdbx_lock:
             from pykeepass import PyKeePass
-            self.kdbx = PyKeePass(**self.kdbx_config)
+            self.kdbx = PyKeePass(filename=self.filename, password=self.password, keyfile=self.keyfile)
             self._last_access = time.time()
 
     def _close(self):

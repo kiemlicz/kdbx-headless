@@ -5,12 +5,14 @@ kdbx: {}
   #keyfile: "..."
   #password: "..."
 
+# method of interaction with KDBX file:
+# 1. KDBX - opens KDBX DB in kdbx-headless process
+# 2. KDBXProxy - uses different process KDBX via libsecret's DBUS connection
+kdbx_class: "KDBX"
+
 log:
   level: INFO
   pattern: "[%(asctime)s] [%(levelname)-8s] [%(threadName)s] %(message)s"
   timestamp: '%Y-%m-%d %H:%M:%S'
 
-# method of interaction with KDBX file:
-# 1. KDBX - opens KDBX DB in kdbx-headless process
-# 2. KDBXProxy - uses different process KDBX via libsecret's DBUS connection
-kdbx_class: "KDBX"
+flask: {}
