@@ -10,6 +10,9 @@ kdbx: {}
 # 2. KDBXProxy - uses different process KDBX via libsecret's DBUS connection
 kdbx_class: "KDBX"
 
+# for secretservice, the key used to find the resource with secret
+selector_key: "creds"
+
 log:
   level: INFO
   pattern: "[%(asctime)s] [%(levelname)-8s] [%(threadName)s] %(message)s"

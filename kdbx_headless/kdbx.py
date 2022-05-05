@@ -9,6 +9,8 @@ from typing import Iterator, Dict, Union, List
 import secretstorage
 from pykeepass.entry import Entry
 
+from kdbx_headless.spec import Secret
+
 log = logging.getLogger(__name__)
 
 
@@ -19,7 +21,7 @@ class KDBXService:
         self._cleanup_task = threading.Timer(KDBXService.Threshold, self._close)
         self._last_access = time.time()
 
-    def get(self, **kwargs) -> Iterator[str]:
+    def get(self, **kwargs) -> Iterator[Secret]:
         pass
 
     def _reschedule(self):
@@ -50,7 +52,7 @@ class KDBXProxy(KDBXService):
         self.db_name = db_name
         self._dbus_lock = threading.RLock()
 
-    def get(self, **kwargs) -> Iterator[Dict[str, str]]:
+    def get(self, **kwargs) -> Iterator[Secret]:
         with self._dbus_lock:
             connection = self._open()
             self._reschedule()
@@ -64,7 +66,7 @@ class KDBXProxy(KDBXService):
                     )
                 )
                 return map(
-                    lambda i: {"password": i.get_secret().decode("utf-8")},
+                    lambda i: Secret(i.get_secret().decode("utf-8")),
                     secret_service.search_items({**kwargs})
                 )
             except StopIteration as e:
@@ -99,26 +101,16 @@ class KDBX(KDBXService):
         self.password = password
         self._kdbx_lock = threading.RLock()
 
-    def get(self, **kwargs) -> Iterator[Dict[str, str]]:
+    def get(self, **kwargs) -> Iterator[Secret]:
         '''
 
         :param kwargs:
         :return: decoded password entry
         '''
 
-        def with_attachments(it: Iterator[Entry]) -> Iterator[Dict[str, str]]:
-            def parse_entry(e: Entry) -> Union[Dict[str, str]]:
-                r = {}
-                if e.password:
-                    r['password'] = e.password
-                if e.attachments:
-                    r['attachments'] = [
-                        {
-                            'filename': attachment.filename,
-                            'contents': attachment.data.decode("utf-8")
-                        } for attachment in e.attachments
-                    ]
-                return r
+        def with_attachments(it: Iterator[Entry]) -> Iterator[Secret]:
+            def parse_entry(e: Entry) -> Secret:
+                return Secret(e.password, [(a.filename, a.data.decode("utf-8")) for a in e.attachments])
 
             return map(lambda e: parse_entry(e), it)
 
