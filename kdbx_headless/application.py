@@ -7,11 +7,11 @@ from apispec.ext.marshmallow import MarshmallowPlugin
 from flask import Flask, request
 from deepmerge import always_merger
 
-from flask_apispec import marshal_with, FlaskApiSpec
+from flask_apispec import marshal_with, FlaskApiSpec, doc, use_kwargs
+from marshmallow import fields
 
 from kdbx_headless.kdbx_provider import SecretProvider
 
-from kdbx_headless.utils import _multi_dict_to_dict
 from kdbx_headless.spec import SecretSchema, Secret
 
 files = [
@@ -62,16 +62,26 @@ app.config.update(
 )
 docs = FlaskApiSpec(app)
 
-
+# fixme add query parameter description
 @app.route("/secret", methods=['GET'])
 @marshal_with(SecretSchema(many=True))
+@use_kwargs(
+    {
+        'creds': fields.Str(required=False),
+        'path': fields.List(fields.Str(), required=False)
+    },
+    location='query'
+)
+@doc(description="Fetch secret entry")
 def secret(**kwargs):
     kdbx = provider.service
-    d = _multi_dict_to_dict(request.args)
-    log.info(f"Query: {d}")
-    return list(kdbx.get(**d))
+    log.info(f"Query: {kwargs}")
+    return list(kdbx.get(**kwargs))
 
 
 @app.route("/health", methods=['GET'])
 def health():
     return "OK"
+
+
+docs.register(secret)

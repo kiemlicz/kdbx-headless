@@ -11,4 +11,4 @@ class Secret:
 
 class SecretSchema(Schema):
     class Meta:
-        fields = ("secret", "attachments", "creds")
+        fields = ("secret", "attachments")
