@@ -62,7 +62,6 @@ app.config.update(
 )
 docs = FlaskApiSpec(app)
 
-# fixme add query parameter description
 @app.route("/secret", methods=['GET'])
 @marshal_with(SecretSchema(many=True))
 @use_kwargs(
