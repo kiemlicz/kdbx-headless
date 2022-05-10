@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-from marshmallow import Schema
+from marshmallow import Schema, fields
 
 
 class Secret:
@@ -10,5 +10,11 @@ class Secret:
 
 
 class SecretSchema(Schema):
-    class Meta:
-        fields = ("secret", "attachments")
+    secret = fields.Str(metadata={'description': "plain-text secret data"})
+    attachments = fields.List(
+        fields.Tuple(
+            [
+                fields.Str(metadata={'description': "filename"}),
+                fields.Str(metadata={'description': "file contents"})]
+        )
+    )

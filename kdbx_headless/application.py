@@ -67,8 +67,8 @@ docs = FlaskApiSpec(app)
 @marshal_with(SecretSchema(many=True))
 @use_kwargs(
     {
-        'creds': fields.Str(required=False),
-        'path': fields.List(fields.Str(), required=False)
+        'creds': fields.Str(required=False, metadata={'description': "Key to search Secret Service"}),
+        'path': fields.List(fields.Str(), required=False, metadata={'description': "Path within KDBX database"})
     },
     location='query'
 )
