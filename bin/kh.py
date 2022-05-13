@@ -28,7 +28,7 @@ parser.add_argument(
     required=False,
     default=ssl.CERT_REQUIRED,
     type=verify_mode
-    )
+)
 args = parser.parse_args()
 
 app_cert = os.path.join(args.ssl, "kdbx-headless.crt")
@@ -38,4 +38,5 @@ ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH, cafile
 ssl_context.load_cert_chain(certfile=app_cert, keyfile=app_key)
 ssl_context.verify_mode = args.verify
 
+# waitress doesn't support ssl_context...
 app.run(host=args.bind, port=args.port, ssl_context=ssl_context)
