@@ -4,6 +4,7 @@ import logging
 import os
 import threading
 import time
+import base64
 from typing import Iterator, Dict, Union, List
 
 import secretstorage
@@ -110,7 +111,15 @@ class KDBX(KDBXService):
 
         def with_attachments(it: Iterator[Entry]) -> Iterator[Secret]:
             def parse_entry(e: Entry) -> Secret:
-                return Secret(e.password, [(a.filename, a.data.decode("utf-8")) for a in e.attachments])
+                password = e.password
+                attachments = []
+                for at in e.attachments:
+                    try:
+                        attachments.append((at.filename, at.data.decode("utf-8")))
+                    except UnicodeDecodeError as e:
+                        log.error(f"Cannot decode: {at.filename} as UTF-8, performing base64")
+                        attachments.append((at.filename, base64.b64encode(at.data)))
+                return Secret(password, attachments)
 
             return map(lambda e: parse_entry(e), it)
 
